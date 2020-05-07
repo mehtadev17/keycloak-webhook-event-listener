@@ -2,6 +2,7 @@ package com.mehtadev17.webhookeventlistenerprovider.provider;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,17 +14,26 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
+import org.keycloak.events.EventType;
 import org.keycloak.events.admin.AdminEvent;
 
 public class WebhookEventListenerProvider implements EventListenerProvider {
     private CloseableHttpClient httpclient = HttpClients.createDefault();
-    private HttpPost request = new HttpPost(System.getenv("EVENT_WEBHOOK_URL"));
+    private HttpPost request;
+    private List<EventType> eventTypes;
+    private Boolean enableAdminEventWebhook;
 
-    public WebhookEventListenerProvider() {
+    public WebhookEventListenerProvider(String eventWebhookUrl, List<EventType> eventTypes, Boolean enableAdminEventWebhook) {
+        request = new HttpPost(eventWebhookUrl);
+        this.eventTypes = eventTypes;
+        this.enableAdminEventWebhook = enableAdminEventWebhook;
     }
 
     @Override
     public void onEvent(Event event) {
+        if(!this.eventTypes.contains(event.getType())) {
+            return;
+        }
         ObjectMapper mapper = new ObjectMapper();
         String jsonString = "";
         try {
@@ -39,7 +49,9 @@ public class WebhookEventListenerProvider implements EventListenerProvider {
 
     @Override
     public void onEvent(AdminEvent adminEvent, boolean b) {
-
+        if(!this.enableAdminEventWebhook){
+            return;
+        }
         ObjectMapper mapper = new ObjectMapper();
         String jsonString = "";
         try {
